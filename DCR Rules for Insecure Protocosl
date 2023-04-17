@@ -1,0 +1,12 @@
+Kerberos
+Security!*[System[(EventID=4678 or EventID=4679]]
+LDAP
+Directory Service!*[System[(EventID=2889 or EventID=2887)]]
+NTLMv1
+Security!*[System[(EventID=4624]]
+SMBv1
+Microsoft-Windows-SMBServer/Audit!*[System[(EventID=3000]]
+Vulnerable Secure Channel
+System!*[System[(EventID=5827 or EventID=5828 or EventID=5829 or EventID=5830)]]
+WDigest
+Security!*[System[(EventID=4776)]]
