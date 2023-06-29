@@ -32,7 +32,7 @@
             "resourceType": "microsoft.resourcegraph/resources"
           },
           {
-            "id": "959662e2-5c74-4876-b5c7-0aaeb2de2ca5",
+          "id": "959662e2-5c74-4876-b5c7-0aaeb2de2ca5",
             "version": "KqlParameterItem/1.0",
             "name": "Subscription",
             "type": 6,
@@ -59,7 +59,7 @@
             "crossComponentResources": [
               "{Subscription}"
             ],
-            "value": "",
+            "value": "/subscriptions/f058f18b-e29b-47c4-ac91-e31e67998f58/resourceGroups/Sentinel/providers/Microsoft.OperationalInsights/workspaces/QB-Sentinel-LA",
             "typeSettings": {
               "additionalResourceOptions": []
             },
@@ -1160,10 +1160,9 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "SecurityEvent\r\n| where EventID == 3000\r\n| parse EventData with * '<Param>' ClientAddress '</' * \r\n| extend Client = replace(@'>', @'', replace(@'\\]', @'', replace(@'\\[', @'', replace(@'<!\\[CDATA', @'', ClientAddress))));\r\n| summarize Count = count() by Client\r\n| join kind = fullouter (datatable(Client:string)['Medium', 'high', 'low']) on Client\r\n| project Client = iff(Client == '', Client1, Client), Count = iff(Client == '', 0, Count)\r\n| join kind = inner (data\r\n | make-series Trend = count() default = 0 on TimeGenerated from {TimeRange:start} to {TimeRange:end} step {TimeRange:grain} by Client)\r\n on Client\r\n| project-away Client1, TimeGenerated\r\n| extend Clients = Client\r\n| union (\r\n data \r\n | summarize Count = count() \r\n | extend jkey = 1\r\n | join kind=inner (data\r\n | make-series Trend = count() default = 0 on TimeGenerated from {TimeRange:start} to {TimeRange:end} step {TimeRange:grain}\r\n | extend jkey = 1) on jkey\r\n | extend Client = 'All', Clients = '*' \r\n)\r\n| order by Count desc\r\n| take 10\r\n",
+              "query": "let data = SecurityEvent\r\n| where EventID == 3000 \r\n| parse EventData with * '<Param>' ClientAddress '</' * \r\n| extend Client = replace(@'>', @'', replace(@'\\]', @'', replace(@'\\[', @'', replace(@'<!\\[CDATA', @'', ClientAddress))));\r\ndata\r\n| summarize Count = count() by Client\r\n| join kind = fullouter (datatable(Client:string)['Medium', 'high', 'low']) on Client\r\n| project Client = iff(Client == '', Client1, Client), Count = iff(Client == '', 0, Count)\r\n| join kind = inner (data\r\n | make-series Trend = count() default = 0 on TimeGenerated from {TimeRange:start} to {TimeRange:end} step {TimeRange:grain} by Client)\r\n on Client\r\n| project-away Client1, TimeGenerated\r\n| extend Clients = Client\r\n| union (\r\n data \r\n | summarize Count = count() \r\n | extend jkey = 1\r\n | join kind=inner (data\r\n | make-series Trend = count() default = 0 on TimeGenerated from {TimeRange:start} to {TimeRange:end} step {TimeRange:grain}\r\n | extend jkey = 1) on jkey\r\n | extend Client = 'All', Clients = '*' \r\n)\r\n| order by Count desc\r\n| take 10\r\n\r\n",
               "size": 4,
               "title": "SMB v1 events, by client - click to filter",
-              "timeContextFromParameter": "TimeRange",
               "exportFieldName": "Client",
               "exportParameterName": "ClientFilter",
               "exportDefaultValue": "All",
@@ -1172,7 +1171,7 @@
               "crossComponentResources": [
                 "{Workspace}"
               ],
-              "visualization": "tiles",
+              "visualization": "card",
               "tileSettings": {
                 "titleContent": {
                   "columnMatch": "Client",
@@ -1461,7 +1460,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| summarize Count=count() by Cipher\r\n\r\n",
+              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| where EventData !contains \"0x11\"\r\n| where EventData !contains \"0x12\"\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| summarize Count=count() by Cipher\r\n\r\n",
               "size": 0,
               "title": "Kerberos weak ciphers - click to filter",
               "timeContextFromParameter": "TimeRange",
@@ -1517,7 +1516,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| where Cipher == '{CipherParameter}' or '{CipherParameter}' == \"All\"\r\n| summarize Count=count() by Cipher, IpAddress, TargetUserName , ServiceName, Computer, Activity\r\n| sort by Count desc",
+              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| where EventData !contains \"0x11\" \r\n| where EventData !contains \"0x12\"\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| where Cipher == '{CipherParameter}' or '{CipherParameter}' == \"All\"\r\n| summarize Count=count() by Cipher, IpAddress, TargetUserName , ServiceName, Computer, Activity\r\n| sort by Count desc",
               "size": 0,
               "title": "Kerberos weak ciphers event details - filtered by cipher",
               "timeContextFromParameter": "TimeRange",
@@ -1575,7 +1574,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| summarize Count=count() by Cipher, bin(TimeGenerated, 1h)\r\n",
+              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| where EventData !contains \"0x11\" \r\n| where EventData !contains \"0x12\"\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| summarize Count=count() by Cipher, bin(TimeGenerated, 1h)\r\n",
               "size": 0,
               "title": "Kerberos weak ciphers - select to timebrush",
               "timeContextFromParameter": "TimeRange",
@@ -1658,7 +1657,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n//| where TargetUserName in ('{targetUserNameKerberosParameter}')\r\n| where TargetUserName == '{targetUserNameKerberosParameter:escape}' or  '{targetUserNameKerberosParameter:escape}' == \"All\"\r\n| summarize OldestRecord = min(TimeGenerated), NewestRecord = max(TimeGenerated), Count=count() by TargetUserName, Cipher, IpAddress , ServiceName, Computer, Activity\r\n| sort by Count desc\r\n",
+              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| where EventData !contains \"0x11\" \r\n| where EventData !contains \"0x12\"\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n//| where TargetUserName in ('{targetUserNameKerberosParameter}')\r\n| where TargetUserName == '{targetUserNameKerberosParameter:escape}' or  '{targetUserNameKerberosParameter:escape}' == \"All\"\r\n| summarize OldestRecord = min(TimeGenerated), NewestRecord = max(TimeGenerated), Count=count() by TargetUserName, Cipher, IpAddress , ServiceName, Computer, Activity\r\n| sort by Count desc\r\n",
               "size": 0,
               "showAnalytics": true,
               "title": "Kerberos weak ciphers event details: {targetUserNameKerberosParameter}, {KeberosTimeBrush:label}",
@@ -1712,7 +1711,7 @@
             "type": 3,
             "content": {
               "version": "KqlItem/1.0",
-              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| summarize OldestRecord = min(TimeGenerated), NewestRecord = max(TimeGenerated), Count=count() by TargetUserName, Cipher, IpAddress , ServiceName, Computer, Activity\r\n| sort by Count desc\r\n",
+              "query": "SecurityEvent\r\n| where (EventID == 4768 or EventID == 4769)\r\n| where EventData !contains \"0x11\" \r\n| where EventData !contains \"0x12\"\r\n| parse EventData with * '\"TicketEncryptionType\">' TicketEncryptionType '<' *\r\n| where TicketEncryptionType != \"0xffffffff\"\r\n| parse EventData with * '\"IpAddress\">' Ip '<' *\r\n| parse EventData with * '\"TargetUserName\">' TargetUserName '<' *\r\n| parse EventData with * '\"ServiceName\">' ServiceName '<' *\r\n| extend IPAddress = substring(Ip, 7, 11)\r\n| extend Cipher=replace('0x18$', 'RC4-HMAC-EXP', replace('0x12$', 'AES256-CTS-HMAC-SHA1', replace('0x11$', 'AES128-CTS-HMAC-SHA1', replace('0x1$', 'DES_CBC_CRC', replace('0x2$', 'DES_CBC_MD4', replace('0x7$', 'DES3_CBC_SHA1', replace('0x5$', 'DES3_CBC_MD5', replace('0x3$', 'DES_CBC_MD5', replace('0x17$', 'RC4_HMAC', TicketEncryptionType)))))))))\r\n| summarize OldestRecord = min(TimeGenerated), NewestRecord = max(TimeGenerated), Count=count() by TargetUserName, Cipher, IpAddress , ServiceName, Computer, Activity\r\n| sort by Count desc\r\n",
               "size": 0,
               "showAnalytics": true,
               "title": "Kerberos weak ciphers event details unfiltered",
@@ -2640,7 +2639,7 @@
       "name": "NetlogonSC"
     }
   ],
-  
+
   "fromTemplateId": "sentinel-InsecureProtocols",
   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
 }
